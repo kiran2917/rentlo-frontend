@@ -11,6 +11,7 @@ export const BuyerLayout = () => {
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const location = useLocation();
+  const isChatRoute = location.pathname.startsWith("/chat/");
   const navigate = useNavigate();
   const { user, logout, checkAuth } = useAuth();
   
@@ -29,6 +30,7 @@ export const BuyerLayout = () => {
     }
 
     let lastKnownIds = new Set();
+    let isFirstFetch = true;
 
     const checkNotifications = () => {
       fetch(`${import.meta.env.VITE_API_URL}/notifications/`, { credentials: "include" })
@@ -40,6 +42,13 @@ export const BuyerLayout = () => {
           if (Array.isArray(data)) {
             const unread = data.filter((n) => !n.is_read);
             setUnreadCount(unread.length);
+
+            // Seed initial notifications so old ones don't trigger alerts on load/login
+            if (isFirstFetch) {
+              data.forEach((n) => lastKnownIds.add(n.id));
+              isFirstFetch = false;
+              return;
+            }
 
             // Trigger OS System Tray Web Push Notification for newly detected unread items
             if ("Notification" in window && Notification.permission === "granted") {
@@ -496,7 +505,8 @@ If an unlocked phone number belongs to an offline or unverified third party, sub
       )}
 
       {/* Master Footer */}
-      <footer className="border-t py-12 mt-auto" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}>
+      {!isChatRoute && (
+        <footer className="border-t py-12 mt-auto" style={{ backgroundColor: "var(--surface)", borderColor: "var(--border)" }}>
         <div className="max-w-[1600px] mx-auto px-4 md:px-10">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pb-10 border-b" style={{ borderColor: "var(--border)" }}>
             {/* Col 1: Brand Info */}
@@ -625,8 +635,10 @@ If an unlocked phone number belongs to an offline or unverified third party, sub
           </div>
         </div>
       </footer>
+      )}
 
       {/* 📱 NATIVE APP MOBILE BOTTOM NAVIGATION BAR FOR BUYERS / TENANTS */}
+      {!isChatRoute && (
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t flex items-center justify-around px-2 shadow-2xl backdrop-blur-xl transition-colors duration-300"
         style={{
@@ -718,6 +730,7 @@ If an unlocked phone number belongs to an offline or unverified third party, sub
           <span className="text-[9.5px] font-bold mt-0.5">{user ? "Console" : "Login"}</span>
         </button>
       </nav>
+      )}
 
       <AuthRoleModal isOpen={showAuthRoleModal} onClose={() => setShowAuthRoleModal(false)} />
     </div>
